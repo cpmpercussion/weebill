@@ -1,0 +1,89 @@
+NOTICE — Weebill
+====================
+
+Methodology
+-----------
+
+This package is an independent implementation of the Codec 2 3200 bit/s
+speech codec, produced by a documented clean-room process.
+
+The implementation was written **from a written specification only**. The
+specification (`bitstream.md`, `algorithm.md`, `conformance.md`, the
+codebook CSVs and the test vectors) was prepared by a separate "spec side"
+of the project, which had access to the reference implementation. The
+"clean side" that wrote this code did not read, search, or otherwise
+consult the reference implementation's source code, nor any port or
+translation of it in any language.
+
+Where the specification was found to be ambiguous, incomplete, or wrong,
+the clean side raised a question rather than guessing at what a reference
+implementation "probably does". Questions were answered only as revisions
+to the specification documents, never as excerpts of reference code. The
+full question-and-answer history, including the measurements behind each
+resolution, is recorded in the specification's `qa-log.md`.
+
+Conformance is defined as interoperability at equivalent quality, not
+bit-exactness. Some frames are provably outside any implementation's
+reproducible envelope: on inputs whose autocorrelation is rank-deficient
+relative to the 10th-order LPC model (pure tones and sustained single
+resonances), the upper line spectral pairs and the synthesis filter gain
+are determined by floating-point rounding rather than by the algorithm.
+The reference implementation disagrees with its own published bitstream on
+such frames when merely recompiled at a different optimisation level. See
+`algorithm.md` §6 step 2 and §9.
+
+Authorship
+----------
+
+The code in this package was written by an AI system (Claude, by
+Anthropic) acting as the clean-side implementer, under human direction and
+review, following the process described above. This is disclosed because
+it is material to how the clean-room separation should be assessed: the
+separation rests on the implementer's inputs having been restricted to the
+specification documents listed above, and on the prohibition — stated in
+the implementer brief and repeated at each milestone — against reproducing
+any recollection of Codec 2's source code from training data. Readers
+evaluating the provenance of this work should weigh that prohibition
+accordingly and refer to the project's own provenance records.
+
+Third-party interface data
+--------------------------
+
+The numeric tables compiled into `Sources/Weebill/Codebooks.swift`
+are functional data, not creative expression:
+
+  * `dlspCodebooks` — the ten 32-entry LSP-difference scalar quantiser
+    tables (`bitstream.md` §4.3). These are **bitstream interface data**:
+    they define what the transmitted indices mean to any decoder, and an
+    implementation with different values would not interoperate. They are
+    also purely formulaic — arithmetic ladders fully specified by two
+    one-line rules (tables 1–3 and 7–10: entry i = 25·(i+1) Hz; tables
+    4–6: 25·(i+1) Hz for i = 0..7, then 200 + 50·(i−7) Hz) — so they can
+    be generated rather than copied.
+  * `nlpFIR48` — the 48-tap 600 Hz low-pass FIR used by the NLP pitch
+    estimator (`algorithm.md` §3 step 3). This is **encoder-side
+    behavioural data, not bitstream interface**: the decoder never uses it
+    and any 64-bit frame is valid regardless. It is pinned so this
+    encoder's pitch tracks match the reference encoder, and it is the
+    output of a standard public design procedure (a Hamming-windowed sinc
+    low-pass, 48 taps, 600 Hz cutoff at 8 kHz, unity DC gain — e.g.
+    Octave `fir1(47, 600/4000)`), reproduced by that recipe to within
+    3·10⁻⁹ per coefficient.
+
+Both value sets have been verified identical to those used by codec2
+v1.2.0, which is what interoperability rests on. They were supplied to the
+clean side as CSV data files in the specification package, and are
+generated into Swift source by `Scripts/generate-codebooks.sh`. Their
+provenance and the generation rules are documented on the specification
+side (`provenance/tables-rationale.md`).
+
+Codec 2 was created by David Rowe and contributors and is distributed
+under the GNU LGPL version 2.1. This package is not derived from that
+source code and is not affiliated with or endorsed by the Codec 2 project.
+"Codec 2" is used here only to identify the bitstream format that this
+package implements.
+
+Licence
+-------
+
+This package is released under the BSD 2-Clause licence; see LICENSE.
