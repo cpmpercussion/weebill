@@ -117,13 +117,14 @@ reference test vectors, robustness fuzzing, and state-isolation checks.
 
 CI runs on every push and pull request
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The `test` job
-builds and runs the suite on macos-14 and macos-15, then release-builds and
-round-trips a vector through `weebill-cli`. The `spec` job checks out
-[codec2-3200-spec](https://github.com/cpmpercussion/codec2-3200-spec) and
-verifies two things against it: that the checked-in `Codebooks.swift` still
-matches the specification's CSV tables, and that the large out-of-band fuzz
-and performance sweep (`Scripts/fuzz-run.sh`) passes. Everything is expected
-to be green; there are no allowed failures.
+builds, runs the suite, then release-builds and round-trips a vector through
+`weebill-cli`. The `spec` job checks out
+[codec2-3200-spec](https://github.com/cpmpercussion/codec2-3200-spec), runs
+the spec's `codebooks/generate.py` to emit its tables from their normative
+rules, and verifies two things: that the checked-in `Codebooks.swift` still
+matches those tables, and that the large out-of-band fuzz and performance
+sweep (`Scripts/fuzz-run.sh`) passes. Everything is expected to be green;
+there are no allowed failures.
 
 ## Regenerating the codebooks
 

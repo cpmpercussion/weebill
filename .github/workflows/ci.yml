@@ -12,15 +12,11 @@ concurrency:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Test
+    runs-on: macos-15
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-14, macos-15]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Toolchain version
         # Recorded so the build cache is invalidated when the runner image
@@ -28,11 +24,11 @@ jobs:
         run: swift --version | tee .swift-version
 
       - name: Cache build products
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .build
-          key: ${{ matrix.os }}-spm-${{ hashFiles('.swift-version') }}-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
-          restore-keys: ${{ matrix.os }}-spm-${{ hashFiles('.swift-version') }}-
+          key: spm-${{ hashFiles('.swift-version') }}-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: spm-${{ hashFiles('.swift-version') }}-
 
       - name: Build (debug)
         run: swift build
@@ -60,15 +56,20 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check out the specification
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: cpmpercussion/codec2-3200-spec
           path: spec
 
-      - name: Codebooks match the spec CSVs
+      - name: Generate the spec's codebook tables
+        # The spec ships the generating rules, not the values: the CSVs are
+        # git-ignored working artifacts, so they must be produced here.
+        run: python3 spec/codebooks/generate.py
+
+      - name: Codebooks match the spec's tables
         run: |
           set -euo pipefail
           Scripts/generate-codebooks.sh spec/codebooks
