@@ -16,6 +16,20 @@ Codec 2 3200 is a harmonic sinusoidal vocoder: 8 kHz mono 16-bit PCM in,
 - Codebook tables are compiled in; nothing is read from disk at runtime.
 - macOS 12+, iOS 15+, tvOS 15+, watchOS 8+.
 
+### Why does this exist?
+
+The codec2 3200bps encoding format is commonly used in amateur radio, particularly for communications using the M17 protocol, which can be used both on physical radio hardware and from computers over internet connections.
+The codec2 source library is licensed under LGPL-2.1, which complicates its use in the Apple App Store and potentially other app stores.
+Weebill is a pure-Swift codec written from an independent specification of the 3200bps mode, published separately at [codec2-3200-spec](https://github.com/cpmpercussion/codec2-3200-spec), and is interoperable with the codec2 3200bps format, enabling communication using the M17 voice protocol.
+AI tools were used in the production of this library: one agent authored the specification with reference to the LGPL-licensed source, and a separate agent implemented Weebill from that specification alone.
+
+The lead developer of codec2, David Rowe (VK5DGR), is aware and supportive of this project, while noting that neither he nor FreeDV claims or bears any responsibility for this library.
+The project is aligned with the goals of codec2, an open voice codec unencumbered by commercial patents, and with the purpose of the amateur radio service itself, which the ITU defines as self-training, intercommunication, and technical investigations.
+
+While this library has been primarily created to support my self-training, intercommunication, and technical investigations, others are welcome to use or improve it for their own projects.
+
+--Charles (VK1CPM)
+
 ## Usage
 
 ```swift
