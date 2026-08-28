@@ -1,5 +1,7 @@
 # Weebill
 
+[![CI](https://github.com/cpmpercussion/weebill/actions/workflows/ci.yml/badge.svg)](https://github.com/cpmpercussion/weebill/actions/workflows/ci.yml)
+
 An independent speech codec in Swift, implementing the **Codec 2 3200
 bit/s** bitstream format and interoperable with the reference codec. It
 was written from specification only, as the clean side of a documented
@@ -112,6 +114,16 @@ The suite covers the specification's known-answer vectors (quantiser laws,
 Gray packing, a field-level dump of a real bitstream), the inverse-DFT
 identity the synthesis stage depends on, decode and encode against the
 reference test vectors, robustness fuzzing, and state-isolation checks.
+
+CI runs on every push and pull request
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The `test` job
+builds and runs the suite on macos-14 and macos-15, then release-builds and
+round-trips a vector through `weebill-cli`. The `spec` job checks out
+[codec2-3200-spec](https://github.com/cpmpercussion/codec2-3200-spec) and
+verifies two things against it: that the checked-in `Codebooks.swift` still
+matches the specification's CSV tables, and that the large out-of-band fuzz
+and performance sweep (`Scripts/fuzz-run.sh`) passes. Everything is expected
+to be green; there are no allowed failures.
 
 ## Regenerating the codebooks
 

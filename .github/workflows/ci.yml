@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain version
+        # Recorded so the build cache is invalidated when the runner image
+        # ships a new Swift.
+        run: swift --version | tee .swift-version
+
+      - name: Cache build products
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ matrix.os }}-spm-${{ hashFiles('.swift-version') }}-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: ${{ matrix.os }}-spm-${{ hashFiles('.swift-version') }}-
+
+      - name: Build (debug)
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: CLI round-trip
+        run: |
+          set -euo pipefail
+          # 100 frames of the reference speech vector: 16000 samples in,
+          # 800 bytes of bitstream out, 16000 samples back.
+          d="$RUNNER_TEMP/roundtrip"; mkdir -p "$d"
+          head -c 32000 Tests/WeebillTests/Resources/speech_arctic_bdl.raw > "$d/in.raw"
+          .build/release/weebill-cli enc "$d/in.raw" "$d/out.c2bits"
+          .build/release/weebill-cli dec "$d/out.c2bits" "$d/out.raw" --seed 1
+          test "$(wc -c < "$d/out.c2bits" | tr -d ' ')" -eq 800
+          test "$(wc -c < "$d/out.raw" | tr -d ' ')" -eq 32000
+
+  spec:
+    name: Spec conformance
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the specification
+        uses: actions/checkout@v4
+        with:
+          repository: cpmpercussion/codec2-3200-spec
+          path: spec
+
+      - name: Codebooks match the spec CSVs
+        run: |
+          set -euo pipefail
+          Scripts/generate-codebooks.sh spec/codebooks
+          if ! git diff --exit-code -- Sources/Weebill/Codebooks.swift; then
+            echo "::error file=Sources/Weebill/Codebooks.swift::Checked-in codebooks differ from the spec tables. Run Scripts/generate-codebooks.sh and commit the result."
+            exit 1
+          fi
+
+      - name: Fuzz and performance sweep
+        # conformance.md D1c at scale, plus the M4 real-time-factor and
+        # memory-growth goals. Fails via precondition trap.
+        run: Scripts/fuzz-run.sh spec/vectors
